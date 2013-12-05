@@ -89,6 +89,9 @@ class EventsExt extends \Events
             }
         }
 
+        // Used to collect exception list data for events
+        $arrEventSkipInfo = array();
+
         foreach ($arrCalendars as $id)
         {
             $strUrl = $this->strUrl;
@@ -273,7 +276,7 @@ class EventsExt extends \Events
                     // now we have to take care about the exception dates to skip
                     if ($objEvents->useExceptions)
                     {
-                        $skipInfos = deserialize($objEvents->exceptionList);
+                        $arrEventSkipInfo[$objEvents->id] = deserialize($objEvents->exceptionList);
                     }
 
                     // time of the next event
@@ -321,7 +324,7 @@ class EventsExt extends \Events
                         $nextTime = $objEvents->endTime;
 
                         // check if there is any exception
-                        if (is_array($skipInfos))
+                        if (is_array($arrEventSkipInfo[$objEvents->id]))
                         {
                             // reset cssClass
                             $objEvents->cssClass = str_replace("exception", "", $objEvents->cssClass);
@@ -333,10 +336,10 @@ class EventsExt extends \Events
                             // store old date values for later reset
                             $oldDate = array();
 
-                            if (is_array($skipInfos[$searchDate]))
+                            if (is_array($arrEventSkipInfo[$objEvents->id][$searchDate]))
                             {
                                 $r = $searchDate;
-                                $action = $skipInfos[$r]['action'];
+                                $action = $arrEventSkipInfo[$objEvents->id][$r]['action'];
                                 if ($action == "hide")
                                 {
                                     //continue the while since we don't want to show the event
@@ -360,22 +363,22 @@ class EventsExt extends \Events
                                     $objEvents->oldDate = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvents->startTime);
 
                                     // value to add to the old date
-                                    $newDate = $skipInfos[$r]['new_exception'];
+                                    $newDate = $arrEventSkipInfo[$objEvents->id][$r]['new_exception'];
 
                                     // store the reason for the move
-                                    $objEvents->moveReason = $skipInfos[$r]['reason'];
+                                    $objEvents->moveReason = $arrEventSkipInfo[$objEvents->id][$r]['reason'];
 
                                     // check if we have to change the time of the event
-                                    if ($skipInfos[$r]['new_start'])
+                                    if ($arrEventSkipInfo[$objEvents->id][$r]['new_start'])
                                     {
                                         $objEvents->oldStartTime = \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvents->startTime);
                                         $objEvents->oldEndTime = \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvents->endTime);
 
                                         // get the date of the event and add the new time to the new date
                                         $newStart = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvents->startTime)
-                                            . ' ' . $skipInfos[$r]['new_start'];
+                                            . ' ' . $arrEventSkipInfo[$objEvents->id][$r]['new_start'];
                                         $newEnd = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvents->endTime)
-                                            . ' ' . $skipInfos[$r]['new_end'];
+                                            . ' ' . $arrEventSkipInfo[$objEvents->id][$r]['new_end'];
 
                                         //set the new values
                                         $objEvents->startTime = strtotime($newDate, strtotime($newStart));
