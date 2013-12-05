@@ -1,14 +1,14 @@
-<?php 
+<?php
 
 /**
  * Contao Open Source CMS
- * 
+ *
  * Copyright (C) 2005-2012 Leo Feyer
- * 
- * @package   Contao 
- * @author    Kester Mielke 
- * @license   LGPL 
- * @copyright Kester Mielke 2010-2013 
+ *
+ * @package   Contao
+ * @author    Kester Mielke
+ * @license   LGPL
+ * @copyright Kester Mielke 2010-2013
  */
 
 
@@ -18,10 +18,10 @@
 namespace Contao;
 
 /**
- * Class EventExt 
+ * Class EventExt
  *
- * @copyright  Kester Mielke 2010-2013 
- * @author     Kester Mielke 
+ * @copyright  Kester Mielke 2010-2013
+ * @author     Kester Mielke
  * @package    Devtools
  */
 class EventsExt extends \Events
@@ -182,8 +182,8 @@ class EventsExt extends \Events
                 }
 
                 // keep the original values
-                $orgStartTime = $objEvents->startTime;
-                $orgEndTime = $objEvents->endTime;
+                $orgDateStart = new \Date($objEvents->startTime);
+                $orgDateEnd = new \Date($objEvents->endTime);
 
                 /*
                  * next we handle the irregular recurrences
@@ -202,29 +202,19 @@ class EventsExt extends \Events
                                 break;
                             }
 
-                            // new date
-                            $new_year = date('Y',strtotime($fixedDate['new_repeat']));
-                            $new_month = date('m',strtotime($fixedDate['new_repeat']));
-                            $new_day = date('d',strtotime($fixedDate['new_repeat']));
-
                             // new start time
-                            $new_hour = \Date::parse("H", $orgStartTime);
-                            $new_min = \Date::parse("i", $orgStartTime);
-                            if ($fixedDate['new_start'])
-                            {
-                                list($new_hour, $new_min) = explode(':', $fixedDate['new_start'], 1);
-                            }
-                            $objEvents->startTime = mktime($new_hour, $new_min, 0, $new_month, $new_day, $new_year);
+                            $strNewDate = $fixedDate['new_repeat'];
+                            $strNewTime = (strlen($fixedDate['new_start']) ? $fixedDate['new_start'] : $orgDateStart->time);
+                            $newDateStart = new \Date(trim($strNewDate.' '.$strNewTime), \Date::getNumericDatimFormat());
+
+                            $objEvents->startTime = $newDateStart->timestamp;
                             $dateNextStart = date('Ymd', $objEvents->startTime);
 
                             // new end time
-                            $new_hour = \Date::parse("H", $orgEndTime);
-                            $new_min = \Date::parse("i", $orgEndTime);
-                            if ($fixedDate['new_end'])
-                            {
-                                list($new_hour, $new_min) = explode(':', $fixedDate['new_end'], 1);
-                            }
-                            $objEvents->endTime = mktime($new_hour, $new_min, 0, $new_month, $new_day, $new_year);
+                            $strNewTime = (strlen($fixedDate['new_end']) ? $fixedDate['new_end'] : $orgDateEnd->time);
+                            $newDateEnd = new \Date(trim($strNewDate.' '.$strNewTime), \Date::getNumericDatimFormat());
+
+                            $objEvents->endTime = $newDateEnd->timestamp;
                             $dateNextEnd = date('Ymd', $objEvents->endTime);
 
                             // set a reason if given...
@@ -234,8 +224,12 @@ class EventsExt extends \Events
                             $objEvents->pos_idx++;
 
                             // add the irregular event to the array
-                            $eventUrl = $strUrl."?day=".Date("Ymd", $objEvents->startTime)."&amp;times=".$objEvents->startTime.",".$objEvents->endTime;
+                            $eventUrl = $strUrl."?day=".date("Ymd", $objEvents->startTime)."&amp;times=".$objEvents->startTime.",".$objEvents->endTime;
                             $this->addEvent($objEvents, $objEvents->startTime, $objEvents->endTime, $eventUrl, $intStart, $intEnd, $id);
+
+                            // Restore the original values
+                            $objEvents->startTime = $orgDateStart->timestamp;
+                            $objEvents->endTime = $orgDateEnd->timestamp;
 
                             // increase $cntRecurrences if event is in scope
                             if ($dateNextStart >= $dateBegin && $dateNextEnd <= $dateEnd)
