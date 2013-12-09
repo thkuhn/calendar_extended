@@ -92,6 +92,9 @@ class EventsExt extends \Events
         // Used to collect exception list data for events
         $arrEventSkipInfo = array();
 
+        // Used to store old date values for later reset
+        $oldDate = array();
+
         foreach ($arrCalendars as $id)
         {
             $strUrl = $this->strUrl;
@@ -328,7 +331,7 @@ class EventsExt extends \Events
                             $searchDate = mktime(0, 0, 0, date('m', $objEvents->startTime), date("d", $objEvents->startTime), date("Y", $objEvents->startTime));
 
                             // store old date values for later reset
-                            $oldDate = array();
+                            $oldDate[$objEvents->id] = array();
 
                             if (is_array($arrEventSkipInfo[$objEvents->id][$searchDate]))
                             {
@@ -350,8 +353,8 @@ class EventsExt extends \Events
                                     $objEvents->cssClass .= "moved";
 
                                     // keep old date. we have to reset it later for the next recurrence
-                                    $oldDate['startTime'] = $objEvents->startTime;
-                                    $oldDate['endTime'] = $objEvents->endTime;
+                                    $oldDate[$objEvents->id]['startTime'] = $objEvents->startTime;
+                                    $oldDate[$objEvents->id]['endTime'] = $objEvents->endTime;
 
                                     // also keep the old values in the row
                                     $objEvents->oldDate = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvents->startTime);
@@ -391,10 +394,10 @@ class EventsExt extends \Events
                         if ($objEvents->endTime < $intStart || $objEvents->startTime > $intEnd)
                         {
                             // in case of a move we have to reset the original date
-                            if ($oldDate)
+                            if ($oldDate[$objEvents->id])
                             {
-                                $objEvents->startTime = $oldDate['startTime'];
-                                $objEvents->endTime = $oldDate['endTime'];
+                                $objEvents->startTime = $oldDate[$objEvents->id]['startTime'];
+                                $objEvents->endTime = $oldDate[$objEvents->id]['endTime'];
                             }
                             // reset this values...
                             $objEvents->moveReason = NULL;
@@ -438,10 +441,10 @@ class EventsExt extends \Events
                         $objEvents->oldEndTime = NULL;
 
                         // in case of a move we have to reset the original date
-                        if ($oldDate)
+                        if ($oldDate[$objEvents->id])
                         {
-                            $objEvents->startTime = $oldDate['startTime'];
-                            $objEvents->endTime = $oldDate['endTime'];
+                            $objEvents->startTime = $oldDate[$objEvents->id]['startTime'];
+                            $objEvents->endTime = $oldDate[$objEvents->id]['endTime'];
                         }
 
                         // increase $cntRecurrences if event is in scope
